@@ -1,112 +1,145 @@
-import Image from "next/image";
+'use client';
+import Climate from "@/components/Climate";
+import SearchBar from "@/components/SearchBar";
+import Table from "@/components/Table";
+import { City, WeatherData } from "@/components/types";
+import { useEffect, useState ,useRef} from "react";
+import Toggle from '@/components/Toggle'
 
 export default function Home() {
+  const [data, setData] = useState<City[]>([]); // Initialize with empty array
+  const [showClimate,setShowClimate]=useState(false);
+  const [curClimate,setCurClimate]=useState<WeatherData|null >(null)
+  const [dataType,setDataType]=useState<"f"| "c">("f");
+  const [offset,setOffSet]=useState(0);
+  const [hasNext,setHasNext]=useState(true);
+  const fetchData = async () => {
+    const baseURL = 'https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/geonames-all-cities-with-a-population-1000/records';
+    const selectParams = 'geoname_id,name,cou_name_en,population,timezone,coordinates';
+    const limitParam = 'limit=50';
+    const orderParam="orderby=name ASC"
+    const finalURL = `${baseURL}?select=${selectParams}&${limitParam}&offset=${offset}`;//&where=${searchParam}
+    const response = await fetch(finalURL);
+    const responseData = await response.json();
+    const totalRecords = responseData.total_count;
+    const remainingRecords = totalRecords - (offset + 50);
+    const hasMoreData = remainingRecords > 0;
+    setHasNext(hasMoreData);
+
+    const values = responseData.results.map((record: any) => ({
+      id: record.geoname_id,
+      name: record.name,
+      countryName: record.cou_name_en,
+      population: record.population,
+      timeZone: record.timezone,
+      coordinates: {
+        lon: record.coordinates.lon,
+        lat: record.coordinates.lat
+      }
+    }));
+    console.log("");
+    setData((prev) => {
+      const newData = [...prev]; // Create a copy of the previous array
+      values.forEach((newValue:any) => {
+        // Check if an item with the same 'id' already exists in the array
+        if (!newData.some((existingItem) => existingItem.id === newValue.id)) {
+          newData.push(newValue); // Add the item if it's not already in the array
+        }
+      });
+      return newData; // Return the updated array
+    });
+
+  };
+  const getWeather=async()=>{
+    const apiKey='171e27ebebbc08a6bab106bc1270030d';
+    const resp=await fetch(`http://api.openweathermap.org/data/2.5/forecast?id=524901&appid=${apiKey}`)
+    const data=await resp.json();
+    console.log(data);
+  }
+  const getSingleWeather = async ({ lat, lon }: { lat: string, lon: string }) => {
+    try {
+      const apiKey = '171e27ebebbc08a6bab106bc1270030d';
+      const unit=dataType==='f'?'imperial':'metric'
+      const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=${unit}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch weather data');
+      }
+      const data = await response.json();
+      
+      const values = {
+        cloud: data.clouds.all,
+        feels_like: data.main.feels_like,
+        humidity: data.main.humidity,
+        pressure: data.main.pressure,
+        temp: data.main.temp,
+        temp_max: data.main.temp_max,
+        temp_min: data.main.temp_min,
+        visibility: data.visibility,
+        wind_speed: data.wind.speed,
+        wind_deg: data.wind.deg,
+        weather: data.weather[0],
+        timezoneOffset: data.timezone, // Updated to timezone offset in seconds
+        sunrise: data.sys.sunrise * 1000, // Convert seconds to milliseconds
+        sunset: data.sys.sunset * 1000, // Convert seconds to milliseconds
+        condition:''
+      };
+  
+      const currentTime = new Date().getTime();
+      console.log(values);
+      if (currentTime > values.sunrise && currentTime < values.sunset) {
+        values.condition='day';
+      } else {
+        values.condition='night';
+      }
+      // console.log(values);
+      setCurClimate(values);
+      setShowClimate(true);  
+    } catch (error) {
+      console.error('Error fetching weather data:', error);
+    }
+  };
+
+    useEffect(() => {
+      fetchData();
+      getWeather();
+      const handleScroll = () => {
+        const scrollTop = (document.documentElement && document.documentElement.scrollTop) || document.body.scrollTop;
+        const scrollHeight = (document.documentElement && document.documentElement.scrollHeight) || document.body.scrollHeight;
+        const clientHeight = document.documentElement.clientHeight || window.innerHeight;
+        const scrolledToBottom = Math.ceil(scrollTop + clientHeight) >= scrollHeight;
+      
+        if (scrolledToBottom && hasNext) {
+          console.log("Scrolled to the bottom of the page offset:"+offset);
+          // Fetch more data
+          setOffSet(offset + 50);
+        }
+      };
+      
+      window.addEventListener("scroll", handleScroll);
+      return () => window.removeEventListener("scroll", handleScroll);
+    }, [offset, hasNext]);
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <main className="base relative">
+      <div onClick={()=>{showClimate===true?setShowClimate(false):null}}>
+          <div className="flex bg-gray-50 items-center sticky top-0 z-20 shadow-lg mx-auto ">
+            <div className="min-w-[85%] flex-grow-1">
+              <SearchBar getWeather={getSingleWeather}/>
+            </div>
+            <div className="flex flex-row gap-1">
+                <span className="text-xl font-semibold">{dataType.toUpperCase()}</span>
+                <Toggle setDataType={setDataType}/>
+            </div>
+          </div>
+        <div className="md:px-[10vw]  py-[1vw] flex flex-col gap-2">
+          <Table data={data} getWeather={getSingleWeather} setOffset={setOffSet} hasNext={hasNext}/>
         </div>
       </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+      <div>
+      {showClimate && data!==null &&
+        <div className="fixed top-[6vh] left-[6vw]  right-[6vw] rounded-xl shadow-md z-30 ">
+            <Climate data={curClimate} setShowClimate={setShowClimate} dataType={dataType} />
+        </div>
+      }
       </div>
     </main>
   );
