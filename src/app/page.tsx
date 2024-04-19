@@ -39,12 +39,10 @@ export default function Home() {
     }));
     console.log("");
     setData((prev) => {
-      const newData = [...prev]; // Create a copy of the previous array
+      const newData = [...prev]; 
       values.forEach((newValue:any) => {
-        // Check if an item with the same 'id' already exists in the array
         if (!newData.some((existingItem) => existingItem.id === newValue.id)) {
-          newData.push(newValue); // Add the item if it's not already in the array
-        }
+          newData.push(newValue);         }
       });
       return newData; // Return the updated array
     });
@@ -131,7 +129,7 @@ export default function Home() {
             </div>
           </div>
         <div className="md:px-[10vw]  py-[1vw] flex flex-col gap-2">
-          <Table data={data} getWeather={getSingleWeather} setOffset={setOffSet} hasNext={hasNext}/>
+          <Table data={data} getWeather={getSingleWeather}/>
         </div>
       </div>
       <div>
