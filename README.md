@@ -1,6 +1,7 @@
 ## OverView
 This basic weather app utilizes Operweather APi for weather Information and OpenDataSoft for city data.
-OpenWeather: openweathermap.org
+
+OpenWeather: https://openweathermap.org/
 OpendataSoft: https://public.opendatasoft.com/explore/dataset/geonames-all-cities-with-a-population-1000/api/?disjunctive.cou_name_en&sort=name
 
 It was built using Next.js, TypeScript, TailwindCSS, and React.js.
