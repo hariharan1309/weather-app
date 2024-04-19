@@ -9,7 +9,7 @@ import Toggle from '@/components/Toggle'
 export default function Home() {
   const [data, setData] = useState<City[]>([]); // Initialize with empty array
   const [showClimate,setShowClimate]=useState(false);
-  const [curClimate,setCurClimate]=useState<WeatherData|null >(null)
+  const [curClimate,setCurClimate]=useState<WeatherData >({} as WeatherData);
   const [dataType,setDataType]=useState<"f"| "c">("f");
   const [offset,setOffSet]=useState(0);
   const [hasNext,setHasNext]=useState(true);
@@ -18,7 +18,7 @@ export default function Home() {
     const selectParams = 'geoname_id,name,cou_name_en,population,timezone,coordinates';
     const limitParam = 'limit=50';
     const orderParam="orderby=name ASC"
-    const finalURL = `${baseURL}?select=${selectParams}&${limitParam}&offset=${offset}`;//&where=${searchParam}
+    const finalURL = `${baseURL}?select=${selectParams}&${limitParam}&offset=${offset}&${orderParam}`;//&where=${searchParam}
     const response = await fetch(finalURL);
     const responseData = await response.json();
     const totalRecords = responseData.total_count;
@@ -133,7 +133,7 @@ export default function Home() {
         </div>
       </div>
       <div>
-      {showClimate && data!==null &&
+      {showClimate &&
         <div className="fixed top-[6vh] left-[6vw]  right-[6vw] rounded-xl shadow-md z-30 ">
             <Climate data={curClimate} setShowClimate={setShowClimate} dataType={dataType} />
         </div>
