@@ -45,7 +45,7 @@ export type ClimateType={
     setShowClimate: Dispatch<SetStateAction<boolean>>;
     dataType: string;
   }
-export type ClimateCard={
+export type ClimateCardType={
   data:WeatherData;
   img:ImgProp;
   dataType:string;

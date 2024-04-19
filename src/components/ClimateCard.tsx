@@ -1,8 +1,8 @@
 import Image from 'next/image';
-import {ClimateCard } from './types';
+import {ClimateCardType } from './types';
 import TempGif from '/images/temperature.gif'
 
-const ClimateCard = ({data,img,dataType}:ClimateCard) => {
+const ClimateCard = ({data,img,dataType}:ClimateCardType) => {
   const today = new Date();
   const dayOfWeek = today.getDay();
     const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
